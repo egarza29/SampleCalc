@@ -22,7 +22,9 @@
 ## Localization
 - UI supports English and Spanish.
 - Default language follows device locale; user can override from Settings.
-- Numerical format is not localized in Phase 1; decimal point remains ".".
+- Numbers use locale-friendly separators:
+  - English: decimal ".", list separator "," (function arguments).
+  - Spanish: decimal ",", list separator ";" (function arguments).
 
 ## Accessibility
 - Large targets, labels, and semantic roles for controls.

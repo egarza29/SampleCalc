@@ -48,6 +48,20 @@ void main() {
       expect(engine.evaluate('2e'), closeTo(2 * 2.718281828459045, 1e-12));
     });
 
+    test('spanish-style decimals and list separator', () {
+      final engine = CalculatorEngine(
+        settings: const CalculatorSettings(
+          angleMode: AngleMode.deg,
+          precision: 12,
+          decimalSeparator: ',',
+          listSeparator: ';',
+        ),
+      );
+      expect(engine.evaluate('1,5+2'), closeTo(3.5, 1e-12));
+      expect(engine.evaluate('max(1;2;3)'), 3);
+      expect(engine.evaluate('min(1;2;3)'), 1);
+    });
+
     test('errors', () {
       final engine = CalculatorEngine(settings: const CalculatorSettings(angleMode: AngleMode.rad, precision: 10));
       expect(() => engine.evaluate('1/0'), throwsA(isA<StateError>()));

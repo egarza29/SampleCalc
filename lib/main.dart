@@ -56,6 +56,26 @@ class _CalculatorPageState extends State<CalculatorPage> {
   String _expression = '';
   String _result = '0';
   String? _error;
+  bool _didInitLocale = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didInitLocale) return;
+    final locale = widget.localeOverride ?? Localizations.localeOf(context);
+    final isSpanish = locale.languageCode.toLowerCase() == 'es';
+    final decimal = isSpanish ? ',' : '.';
+    final list = isSpanish ? ';' : ',';
+    _engine.updateSettings(
+      CalculatorSettings(
+        angleMode: _engine.settings.angleMode,
+        precision: _engine.settings.precision,
+        decimalSeparator: decimal,
+        listSeparator: list,
+      ),
+    );
+    _didInitLocale = true;
+  }
 
   void _copyToClipboard(String text) {
     Clipboard.setData(ClipboardData(text: text));
@@ -142,7 +162,18 @@ class _CalculatorPageState extends State<CalculatorPage> {
                       child: FilledButton(
                         onPressed: () {
                           setState(() {
-                            _engine.updateSettings(CalculatorSettings(angleMode: angle, precision: precision));
+                            final selectedLocale = localeOverride ?? Localizations.localeOf(context);
+                            final isSpanish = selectedLocale.languageCode.toLowerCase() == 'es';
+                            final decimal = isSpanish ? ',' : '.';
+                            final list = isSpanish ? ';' : ',';
+                            _engine.updateSettings(
+                              CalculatorSettings(
+                                angleMode: angle,
+                                precision: precision,
+                                decimalSeparator: decimal,
+                                listSeparator: list,
+                              ),
+                            );
                           });
                           widget.onLocaleChanged(localeOverride);
                           Navigator.of(context).pop();
@@ -224,7 +255,14 @@ class _CalculatorPageState extends State<CalculatorPage> {
 
   void _toggleAngleMode() {
     final next = _engine.settings.angleMode == AngleMode.deg ? AngleMode.rad : AngleMode.deg;
-    _engine.updateSettings(CalculatorSettings(angleMode: next, precision: _engine.settings.precision));
+    _engine.updateSettings(
+      CalculatorSettings(
+        angleMode: next,
+        precision: _engine.settings.precision,
+        decimalSeparator: _engine.settings.decimalSeparator,
+        listSeparator: _engine.settings.listSeparator,
+      ),
+    );
     setState(() {});
   }
 
@@ -297,6 +335,8 @@ class _CalculatorPageState extends State<CalculatorPage> {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
+    final decimalKey = _engine.settings.decimalSeparator;
+    final listKey = _engine.settings.listSeparator;
     final keys = [
       'sin(', 'cos(', 'tan(', 'asin(', 'acos(',
       'atan(', 'sqrt(', 'ln(', 'log(', 'abs(',
@@ -304,53 +344,54 @@ class _CalculatorPageState extends State<CalculatorPage> {
       '7', '8', '9', '/', 'C',
       '4', '5', '6', '*', '⌫',
       '1', '2', '3', '-', 'MC',
-      '0', '.', ',', '+', '=',
+      '0', decimalKey, listKey, '+', '=',
       '(', ')', '^', '%', '!',
       'M+', 'M-', 'MR', 'ANS', 'CE',
     ];
     return Focus(
       autofocus: true,
       child: Shortcuts(
-        shortcuts: <ShortcutActivator, Intent>{
-          const SingleActivator(LogicalKeyboardKey.enter): const _KeyIntent('='),
-          const SingleActivator(LogicalKeyboardKey.numpadEnter): const _KeyIntent('='),
-          const SingleActivator(LogicalKeyboardKey.equal): const _KeyIntent('='),
-          const SingleActivator(LogicalKeyboardKey.backspace): const _KeyIntent('⌫'),
-          const SingleActivator(LogicalKeyboardKey.delete): const _KeyIntent('CE'),
-          const SingleActivator(LogicalKeyboardKey.escape): const _KeyIntent('C'),
-          const SingleActivator(LogicalKeyboardKey.period): const _KeyIntent('.'),
-          const SingleActivator(LogicalKeyboardKey.comma): const _KeyIntent(','),
-          const SingleActivator(LogicalKeyboardKey.minus): const _KeyIntent('-'),
-          const SingleActivator(LogicalKeyboardKey.numpadSubtract): const _KeyIntent('-'),
-          const SingleActivator(LogicalKeyboardKey.numpadAdd): const _KeyIntent('+'),
-          const SingleActivator(LogicalKeyboardKey.slash): const _KeyIntent('/'),
-          const SingleActivator(LogicalKeyboardKey.numpadDivide): const _KeyIntent('/'),
-          const SingleActivator(LogicalKeyboardKey.numpadMultiply): const _KeyIntent('*'),
-          const SingleActivator(LogicalKeyboardKey.digit8, shift: true): const _KeyIntent('*'),
-          const SingleActivator(LogicalKeyboardKey.digit9, shift: true): const _KeyIntent('('),
-          const SingleActivator(LogicalKeyboardKey.digit0, shift: true): const _KeyIntent(')'),
-          const SingleActivator(LogicalKeyboardKey.digit5, shift: true): const _KeyIntent('%'),
-          const SingleActivator(LogicalKeyboardKey.digit6, shift: true): const _KeyIntent('^'),
-          const SingleActivator(LogicalKeyboardKey.digit0): const _KeyIntent('0'),
-          const SingleActivator(LogicalKeyboardKey.digit1): const _KeyIntent('1'),
-          const SingleActivator(LogicalKeyboardKey.digit2): const _KeyIntent('2'),
-          const SingleActivator(LogicalKeyboardKey.digit3): const _KeyIntent('3'),
-          const SingleActivator(LogicalKeyboardKey.digit4): const _KeyIntent('4'),
-          const SingleActivator(LogicalKeyboardKey.digit5): const _KeyIntent('5'),
-          const SingleActivator(LogicalKeyboardKey.digit6): const _KeyIntent('6'),
-          const SingleActivator(LogicalKeyboardKey.digit7): const _KeyIntent('7'),
-          const SingleActivator(LogicalKeyboardKey.digit8): const _KeyIntent('8'),
-          const SingleActivator(LogicalKeyboardKey.digit9): const _KeyIntent('9'),
-          const SingleActivator(LogicalKeyboardKey.numpad0): const _KeyIntent('0'),
-          const SingleActivator(LogicalKeyboardKey.numpad1): const _KeyIntent('1'),
-          const SingleActivator(LogicalKeyboardKey.numpad2): const _KeyIntent('2'),
-          const SingleActivator(LogicalKeyboardKey.numpad3): const _KeyIntent('3'),
-          const SingleActivator(LogicalKeyboardKey.numpad4): const _KeyIntent('4'),
-          const SingleActivator(LogicalKeyboardKey.numpad5): const _KeyIntent('5'),
-          const SingleActivator(LogicalKeyboardKey.numpad6): const _KeyIntent('6'),
-          const SingleActivator(LogicalKeyboardKey.numpad7): const _KeyIntent('7'),
-          const SingleActivator(LogicalKeyboardKey.numpad8): const _KeyIntent('8'),
-          const SingleActivator(LogicalKeyboardKey.numpad9): const _KeyIntent('9'),
+        shortcuts: const <ShortcutActivator, Intent>{
+          SingleActivator(LogicalKeyboardKey.enter): _KeyIntent('='),
+          SingleActivator(LogicalKeyboardKey.numpadEnter): _KeyIntent('='),
+          SingleActivator(LogicalKeyboardKey.equal): _KeyIntent('='),
+          SingleActivator(LogicalKeyboardKey.backspace): _KeyIntent('⌫'),
+          SingleActivator(LogicalKeyboardKey.delete): _KeyIntent('CE'),
+          SingleActivator(LogicalKeyboardKey.escape): _KeyIntent('C'),
+          SingleActivator(LogicalKeyboardKey.period): _KeyIntent('.'),
+          SingleActivator(LogicalKeyboardKey.comma): _KeyIntent(','),
+          SingleActivator(LogicalKeyboardKey.semicolon): _KeyIntent(';'),
+          SingleActivator(LogicalKeyboardKey.minus): _KeyIntent('-'),
+          SingleActivator(LogicalKeyboardKey.numpadSubtract): _KeyIntent('-'),
+          SingleActivator(LogicalKeyboardKey.numpadAdd): _KeyIntent('+'),
+          SingleActivator(LogicalKeyboardKey.slash): _KeyIntent('/'),
+          SingleActivator(LogicalKeyboardKey.numpadDivide): _KeyIntent('/'),
+          SingleActivator(LogicalKeyboardKey.numpadMultiply): _KeyIntent('*'),
+          SingleActivator(LogicalKeyboardKey.digit8, shift: true): _KeyIntent('*'),
+          SingleActivator(LogicalKeyboardKey.digit9, shift: true): _KeyIntent('('),
+          SingleActivator(LogicalKeyboardKey.digit0, shift: true): _KeyIntent(')'),
+          SingleActivator(LogicalKeyboardKey.digit5, shift: true): _KeyIntent('%'),
+          SingleActivator(LogicalKeyboardKey.digit6, shift: true): _KeyIntent('^'),
+          SingleActivator(LogicalKeyboardKey.digit0): _KeyIntent('0'),
+          SingleActivator(LogicalKeyboardKey.digit1): _KeyIntent('1'),
+          SingleActivator(LogicalKeyboardKey.digit2): _KeyIntent('2'),
+          SingleActivator(LogicalKeyboardKey.digit3): _KeyIntent('3'),
+          SingleActivator(LogicalKeyboardKey.digit4): _KeyIntent('4'),
+          SingleActivator(LogicalKeyboardKey.digit5): _KeyIntent('5'),
+          SingleActivator(LogicalKeyboardKey.digit6): _KeyIntent('6'),
+          SingleActivator(LogicalKeyboardKey.digit7): _KeyIntent('7'),
+          SingleActivator(LogicalKeyboardKey.digit8): _KeyIntent('8'),
+          SingleActivator(LogicalKeyboardKey.digit9): _KeyIntent('9'),
+          SingleActivator(LogicalKeyboardKey.numpad0): _KeyIntent('0'),
+          SingleActivator(LogicalKeyboardKey.numpad1): _KeyIntent('1'),
+          SingleActivator(LogicalKeyboardKey.numpad2): _KeyIntent('2'),
+          SingleActivator(LogicalKeyboardKey.numpad3): _KeyIntent('3'),
+          SingleActivator(LogicalKeyboardKey.numpad4): _KeyIntent('4'),
+          SingleActivator(LogicalKeyboardKey.numpad5): _KeyIntent('5'),
+          SingleActivator(LogicalKeyboardKey.numpad6): _KeyIntent('6'),
+          SingleActivator(LogicalKeyboardKey.numpad7): _KeyIntent('7'),
+          SingleActivator(LogicalKeyboardKey.numpad8): _KeyIntent('8'),
+          SingleActivator(LogicalKeyboardKey.numpad9): _KeyIntent('9'),
         },
         child: Actions(
           actions: <Type, Action<Intent>>{

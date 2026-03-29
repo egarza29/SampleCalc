@@ -5,7 +5,14 @@ enum AngleMode { deg, rad }
 class CalculatorSettings {
   final AngleMode angleMode;
   final int precision;
-  const CalculatorSettings({this.angleMode = AngleMode.rad, this.precision = 10});
+  final String decimalSeparator;
+  final String listSeparator;
+  const CalculatorSettings({
+    this.angleMode = AngleMode.rad,
+    this.precision = 10,
+    this.decimalSeparator = '.',
+    this.listSeparator = ',',
+  });
 }
 
 class Memory {
@@ -60,12 +67,12 @@ class CalculatorEngine {
         i++;
         continue;
       }
-      if (_isDigit(ch) || ch == '.') {
+      if (_isDigit(ch) || _isDecimalChar(ch)) {
         final start = i;
-        var hasDot = ch == '.';
+        var hasDecimal = _isDecimalChar(ch);
         i++;
-        while (i < s.length && (_isDigit(s[i]) || (s[i] == '.' && !hasDot))) {
-          hasDot = hasDot || s[i] == '.';
+        while (i < s.length && (_isDigit(s[i]) || (_isDecimalChar(s[i]) && !hasDecimal))) {
+          hasDecimal = hasDecimal || _isDecimalChar(s[i]);
           i++;
         }
         if (i < s.length && (s[i] == 'e' || s[i] == 'E') && _looksLikeExponent(s, i + 1)) {
@@ -77,7 +84,7 @@ class CalculatorEngine {
             i++;
           }
         }
-        tokens.add(_Token.number(double.parse(s.substring(start, i))));
+        tokens.add(_Token.number(_parseNumberText(s.substring(start, i))));
         continue;
       }
       if (_isAlpha(ch) || ch == '_') {
@@ -90,7 +97,7 @@ class CalculatorEngine {
         tokens.add(_Token.ident(ident));
         continue;
       }
-      if ('+-*/^%!(),'.contains(ch)) {
+      if ('+-*/^%!(),;'.contains(ch)) {
         tokens.add(_Token.symbol(ch));
         i++;
         continue;
@@ -98,6 +105,16 @@ class CalculatorEngine {
       throw FormatException('Invalid character: $ch');
     }
     return tokens;
+  }
+
+  double _parseNumberText(String text) {
+    return double.parse(text.replaceAll(',', '.'));
+  }
+
+  bool _isDecimalChar(String ch) {
+    if (ch == settings.decimalSeparator) return true;
+    final alt = settings.decimalSeparator == '.' ? ',' : '.';
+    return ch == alt && alt != settings.listSeparator;
   }
 
   List<_Token> _insertImplicitMultiplication(List<_Token> tokens) {
@@ -172,27 +189,27 @@ class CalculatorEngine {
             while (stack.isNotEmpty && !stack.last.isLParen) {
               output.add(_RpnEntry.op(stack.removeLast().op!));
             }
-            if (stack.isEmpty) throw FormatException('Unbalanced parentheses');
+            if (stack.isEmpty) throw const FormatException('Unbalanced parentheses');
             final isFuncCall = callFrames.isNotEmpty ? callFrames.removeLast() : false;
             stack.removeLast(); // pop '('
             if (isFuncCall) {
               if (stack.isEmpty || !stack.last.isFunc) {
-                throw FormatException('Function call missing name');
+                throw const FormatException('Function call missing name');
               }
               final func = stack.removeLast();
               final argc = prevType == 'LPAREN' ? 0 : (argCounts.isNotEmpty ? argCounts.removeLast() : 1);
               output.add(_RpnEntry.func(func.funcName!, argc));
             }
             prevType = 'RPAREN';
-          } else if (sym == ',') {
+          } else if (sym == ',' || sym == ';') {
             if (callFrames.isEmpty || !callFrames.last) {
-              throw FormatException('Misplaced comma');
+              throw const FormatException('Misplaced comma');
             }
             while (stack.isNotEmpty && !stack.last.isLParen) {
               output.add(_RpnEntry.op(stack.removeLast().op!));
             }
             if (argCounts.isEmpty) {
-              throw FormatException('Misplaced comma');
+              throw const FormatException('Misplaced comma');
             }
             argCounts[argCounts.length - 1]++;
           } else if ('+-*/^%!'.contains(sym)) {
@@ -216,11 +233,11 @@ class CalculatorEngine {
     }
     while (stack.isNotEmpty) {
       final top = stack.removeLast();
-      if (top.isLParen) throw FormatException('Unbalanced parentheses');
+      if (top.isLParen) throw const FormatException('Unbalanced parentheses');
       if (top.isFunc) {
         throw FormatException('Function call missing parentheses: ${top.funcName}');
       }
-      if (top.op == null) throw FormatException('Invalid operator');
+      if (top.op == null) throw const FormatException('Invalid operator');
       output.add(_RpnEntry.op(top.op!));
     }
     return output;
